@@ -1,6 +1,6 @@
 import sqlite3
 
-con = sqlite3.connect("data/brasileirao.db")
+con = sqlite3.connect("brasileirao.db")
 cur = con.cursor()
 
 # Criar tabela de times com estatísticas

@@ -1,7 +1,7 @@
 import sqlite3
 
 # Conectando ao banco
-conn = sqlite3.connect('data/brasileirao.db')
+conn = sqlite3.connect('brasileirao.db')
 cursor = conn.cursor()
 
 times_2025 = [
