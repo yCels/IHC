@@ -4,6 +4,7 @@ from llama_index.tools.mcp import McpToolSpec
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.llms import Context
 from llama_index.llms.event import ToolCall, ToolCallResult
+from llama_index.tools.mcp import BasicMCPClient  # Importando corretamente o cliente MCP
 
 # Definindo o modelo LLM para "qwen-coder:2.5"
 llm = Ollama(model="qwen-coder:2.5", request_timeout=120.0)
@@ -44,7 +45,7 @@ async def lidar_com_mensagem_usuario(
     return str(resposta)
 
 # Inicializando o cliente MCP
-mcp_client = BasicMCPClient("http://127.0.0.1:8000/sse")
+mcp_client = BasicMCPClient("http://127.0.0.1:8000/sse")  # A URL do servidor MCP
 mcp_tool = McpToolSpec(client=mcp_client)
 
 # Obtendo o agente

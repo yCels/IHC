@@ -7,18 +7,16 @@ mcp = FastMCP("sqlite-demo")
 @mcp.tool()
 def adicionar_dados(query: str) -> bool:
     """Executa uma query INSERT para adicionar um registro"""
-    conn = sqlite3.connect("demo.db")
-    conn.execute(query)
-    conn.commit()
-    conn.close()  # Corrigido o método `close` para fechar a conexão
+    with sqlite3.connect("demo.db") as conn:  # Usando 'with' para garantir que a conexão será fechada automaticamente
+        conn.execute(query)
+        conn.commit()
     return True
 
 @mcp.tool()
 def ler_dados(query: str = "SELECT * FROM pessoas") -> list:
     """Executa uma query SELECT e retorna todos os registros"""
-    conn = sqlite3.connect("demo.db")
-    resultados = conn.execute(query).fetchall()
-    conn.close()  # Corrigido o método `close` para fechar a conexão
+    with sqlite3.connect("demo.db") as conn:  # Usando 'with' para garantir que a conexão será fechada automaticamente
+        resultados = conn.execute(query).fetchall()
     return resultados
 
 if __name__ == "__main__":
