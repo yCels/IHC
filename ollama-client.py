@@ -1,61 +1,89 @@
+import nest_asyncio
+import asyncio
 from llama_index.llms.ollama import Ollama
 from llama_index.core import Settings
-from llama_index.tools.mcp import McpToolSpec
-from llama_index.core.agent.workflow import FunctionAgent
-from llama_index.llms import Context
-from llama_index.llms.event import ToolCall, ToolCallResult
-from llama_index.tools.mcp import BasicMCPClient  # Importando corretamente o cliente MCP
+from llama_index.tools.mcp import McpToolSpec, BasicMCPClient
+from llama_index.core.agent.workflow import FunctionAgent, ToolCall, ToolCallResult
+from llama_index.core.workflow import Context
 
-# Definindo o modelo LLM para "qwen-coder:2.5"
-llm = Ollama(model="qwen-coder:2.5", request_timeout=120.0)
+# Use nest_asyncio para permitir que o loop de eventos aninhado funcione,
+# o que é útil em ambientes como notebooks Jupyter.
+nest_asyncio.apply()
+
+# Definindo o modelo LLM para "qwen2.5-coder:1.5b"
+llm = Ollama(model="qwen2.5-coder:3b", request_timeout=120.0)
 Settings.llm = llm
 
-# Definindo o prompt do sistema
+# Prompt do sistema para o agente
 PROMPT_SISTEMA = """\
 Você é um assistente de IA para Chamada de Ferramentas.
+
 Antes de ajudar, interaja com nossas ferramentas para trabalhar com o banco de dados.
 """
 
-# Função para obter o agente
 async def obter_agente(ferramentas: McpToolSpec):
-    ferramentas = await ferramentas.to_tool_list_async()
+    """Cria e retorna um FunctionAgent com as ferramentas fornecidas."""
+    ferramentas_list = await ferramentas.to_tool_list_async()
     agente = FunctionAgent(
-        nome="Agente",
-        descricao="Agente que interage com seu banco de dados",
-        ferramentas=ferramentas,
+        name="Agente",
+        description="Agente que pode trabalhar com o nosso software de banco de dados.",
+        tools=ferramentas_list,
         llm=llm,
-        sistema_prompt=PROMPT_SISTEMA
+        system_prompt=PROMPT_SISTEMA,
     )
     return agente
 
-# Função para lidar com as mensagens do usuário
 async def lidar_com_mensagem_usuario(
     conteudo_mensagem: str,
     agente: FunctionAgent,
     contexto_agente: Context,
     verbose: bool = False,
 ):
+    """Lida com a mensagem de um usuário usando o agente."""
     manipulador = agente.run(conteudo_mensagem, ctx=contexto_agente)
     async for evento in manipulador.stream_events():
         if verbose and isinstance(evento, ToolCall):
-            print(f"Chamando ferramenta {evento.tool_name}")
+            print(f"Chamando ferramenta {evento.tool_name} com os kwargs {evento.tool_kwargs}")
         elif verbose and isinstance(evento, ToolCallResult):
             print(f"Ferramenta {evento.tool_name} retornou {evento.tool_output}")
+
     resposta = await manipulador
     return str(resposta)
 
-# Inicializando o cliente MCP
-mcp_client = BasicMCPClient("http://127.0.0.1:8000/sse")  # A URL do servidor MCP
-mcp_tool = McpToolSpec(client=mcp_client)
+async def main():
+    # Inicializa o cliente e a especificação de ferramenta do MCP
+    mcp_client = BasicMCPClient("http://127.0.0.1:8000/sse")
+    mcp_tool = McpToolSpec(client=mcp_client)
 
-# Obtendo o agente
-agente = await obter_agente(mcp_tool)
-contexto = Context(agente)
+    # Obtém o agente
+    agente = await obter_agente(mcp_tool)
 
-# Loop principal para interação com o usuário
-while True:
-    msg = input("> ")
-    if msg.lower() == "sair":
-        break
-    resp = await lidar_com_mensagem_usuario(msg, agente, contexto)
-    print("Agente:", resp)
+    # Cria o contexto do agente
+    contexto_agente = Context(agente)
+
+    # Exibe as ferramentas disponíveis
+    ferramentas_disponiveis = await mcp_tool.to_tool_list_async()
+    print("Ferramentas disponíveis:")
+    for ferramenta in ferramentas_disponiveis:
+        print(f"{ferramenta.metadata.name}: {ferramenta.metadata.description}")
+
+    # Loop principal de interação
+    print("\nDigite 'sair' para encerrar")
+    while True:
+        try:
+            entrada_usuario = input("\nDigite sua mensagem: ")
+            if entrada_usuario.lower() == "sair":
+                break
+            
+            print(f"\nUsuário: {entrada_usuario}")
+            resposta = await lidar_com_mensagem_usuario(entrada_usuario, agente, contexto_agente, verbose=True)
+            print(f"Agente: {resposta}")
+        
+        except KeyboardInterrupt:
+            print("\nSaindo...")
+            break
+        except Exception as e:
+            print(f"Erro: {str(e)}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
