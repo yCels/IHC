@@ -2,35 +2,46 @@ import sqlite3
 import argparse
 from mcp.server.fastmcp import FastMCP
 
-# Inicializa o servidor MCP com o nome 'brasileirao-db'
 mcp = FastMCP('brasileirao-db')
 
-# A função `init_db()` cria o banco de dados e a tabela se eles não existirem.
 def init_db():
     conn = sqlite3.connect('brasileirao.db')
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS pessoas (
-            id INTEGER PRIMARY KEY,
-            nome TEXT NOT NULL,
-            idade INTEGER NOT NULL
+    
+    # Cria a tabela
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS times (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL UNIQUE,
+            estado TEXT,
+            pontos INTEGER DEFAULT 0,
+            vitorias INTEGER DEFAULT 0,
+            empates INTEGER DEFAULT 0,
+            derrotas INTEGER DEFAULT 0,
+            saldo_gols INTEGER DEFAULT 0
         )
-    ''')
-    conn.commit()
-    return conn, cursor
+    """)
+
+@mcp.tool()
+def ler_dados(query: str = "SELECT * FROM times") -> list:
+    """Lê dados da tabela 'times' usando uma query SELECT."""
+    conn, cursor = init_db()
+    try:
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        
+        # Converter para lista de dicionários
+        colunas = [desc[0] for desc in cursor.description]
+        return [dict(zip(colunas, row)) for row in resultados]
+    except sqlite3.Error as e:
+        print(f"Erro ao ler dados: {e}")
+        return []
+    finally:
+        conn.close()
 
 @mcp.tool()
 def adicionar_dados(query: str) -> bool:
-    """Adiciona um novo registro à tabela 'pessoas' usando uma query INSERT.
-
-    Args:
-        query (str): Query SQL INSERT no formato:
-            INSERT INTO pessoas (nome, idade)
-            VALUES ('Nome Exemplo', 30)
-
-    Retorna:
-        bool: True se o dado foi adicionado, False em caso de erro.
-    """
+    """Adiciona um novo registro à tabela 'times'."""
     conn, cursor = init_db()
     try:
         cursor.execute(query)
@@ -42,39 +53,15 @@ def adicionar_dados(query: str) -> bool:
     finally:
         conn.close()
 
-@mcp.tool()
-def ler_dados(query: str = "SELECT * FROM pessoas") -> list:
-    """Lê dados da tabela 'pessoas' usando uma query SELECT.
-
-    Args:
-        query (str): Query SQL SELECT (padrão: "SELECT * FROM pessoas").
-
-    Retorna:
-        list: Lista de tuplas contendo os resultados da query.
-    """
-    conn, cursor = init_db()
-    try:
-        cursor.execute(query)
-        return cursor.fetchall()
-    except sqlite3.Error as e:
-        print(f"Erro ao ler dados: {e}")
-        return []
-    finally:
-        conn.close()
-
 if __name__ == "__main__":
     print("🚀 Iniciando o servidor... ")
-
-    # Configuração do parser de argumentos para flexibilidade
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--server_type", type=str, default="sse", choices=["sse", "stdio"]
-    )
     
+    # Primeiro, inicializa o banco para garantir que existe
+    init_db()
+    print("✅ Banco de dados inicializado com sucesso!")
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--server_type", type=str, default="sse", choices=["sse", "stdio"])
     args = parser.parse_args()
 
-    # Cria o banco de dados e a tabela antes de iniciar o servidor
-    init_db()
-
-    # Executa o servidor com o tipo especificado
     mcp.run(args.server_type)
