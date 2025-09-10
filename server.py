@@ -1,10 +1,7 @@
 import sqlite3
+import argparse
 from mcp.server.fastmcp import FastMCP
 
-<<<<<<< Updated upstream
-# Inicializando o servidor MCP
-mcp = FastMCP("brasileirao-sqlite")
-=======
 mcp = FastMCP('brasileirao-db')
 
 def init_db():
@@ -24,9 +21,6 @@ def init_db():
             saldo_gols INTEGER DEFAULT 0
         )
     """)
-    conn.commit()
-    return conn, cursor
->>>>>>> Stashed changes
 
 @mcp.tool()
 def ler_dados(query: str = "SELECT * FROM times") -> list:
@@ -47,30 +41,18 @@ def ler_dados(query: str = "SELECT * FROM times") -> list:
 
 @mcp.tool()
 def adicionar_dados(query: str) -> bool:
-<<<<<<< Updated upstream
-    """Executa uma query INSERT para adicionar um registro"""
-    with sqlite3.connect("brasileirao.db") as conn:  # Usando 'with' para garantir que a conexão será fechada automaticamente
-        conn.execute(query)
-=======
     """Adiciona um novo registro à tabela 'times'."""
     conn, cursor = init_db()
     try:
         cursor.execute(query)
->>>>>>> Stashed changes
         conn.commit()
-    return True
+        return True
+    except sqlite3.Error as e:
+        print(f"Erro ao adicionar dados: {e}")
+        return False
+    finally:
+        conn.close()
 
-<<<<<<< Updated upstream
-@mcp.tool()
-def ler_dados(query: str = "SELECT * FROM pessoas") -> list:
-    """Executa uma query SELECT e retorna todos os registros"""
-    with sqlite3.connect("brasileirao.db") as conn:  # Usando 'with' para garantir que a conexão será fechada automaticamente
-        resultados = conn.execute(query).fetchall()
-    return resultados
-
-if __name__ == "__main__":
-    print("Iniciando o servidor...")
-=======
 if __name__ == "__main__":
     print("🚀 Iniciando o servidor... ")
     
@@ -83,4 +65,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     mcp.run(args.server_type)
->>>>>>> Stashed changes
