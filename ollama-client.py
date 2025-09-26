@@ -287,3 +287,4 @@ Digite 'sair' para encerrar
 
 if __name__ == "__main__":
     asyncio.run(main())
+## linol viado
