@@ -287,3 +287,4 @@ Digite 'sair' para encerrar
 # Celso não é viado
 if __name__ == "__main__":
     asyncio.run(main())
+## linil viado
