@@ -284,6 +284,6 @@ Digite 'sair' para encerrar
             
         except Exception as e:
             console.print(f"❌ Erro: {e}", style="bold red")
-
+# Celso não é viado
 if __name__ == "__main__":
     asyncio.run(main())
