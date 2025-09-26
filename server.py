@@ -6,6 +6,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich import box
 
+# Celso viado
+
 mcp = FastMCP('brasileirao-db')
 console = Console()
 
