@@ -139,7 +139,9 @@ def _render_tabela_times(times: list[dict], titulo: str | None = None) -> None:
         if isinstance(item, dict):
             todas_colunas.update(item.keys())
 
-    colunas = sorted(todas_colunas)
+    
+    # Remove a coluna 'id' da lista de colunas a serem exibidas
+    colunas = sorted([col for col in todas_colunas if col != 'id'])
 
     # Criar tabela
     table = Table(
