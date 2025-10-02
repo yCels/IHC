@@ -127,6 +127,8 @@ def processar_resultado(resultado):
         print(f"❌ Erro ao processar resultado: {e}")
         return []
 
+
+## codigo para ordenar e renderizar tabela
 def _render_tabela_times(times: list[dict], titulo: str | None = None) -> None:
     """Renderiza uma tabela responsiva dos times usando Rich."""
     if not times:
